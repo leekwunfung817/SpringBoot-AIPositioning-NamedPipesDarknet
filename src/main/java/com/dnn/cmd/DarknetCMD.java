@@ -7,43 +7,54 @@ import javax.annotation.PostConstruct;
 import org.mortbay.log.Log;
 import org.springframework.stereotype.Component;
 
-@Component
+import lombok.Getter;
+
 public class DarknetCMD extends Thread {
 
-	@PostConstruct
-	public void init() throws Exception {
+	final String name;
+
+	public DarknetCMD(String name) {
+		this.name = name;
 		this.start();
-//		Thread.sleep(10000);
 	}
+
+	@Getter
+	Process process = null;
 
 	@Override
 	public void run() {
-		try {
-			// TODO Auto-generated method stub
-			ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", //
-					"cd darknet_resources && " //
-							+ "\"../darknet_release/darknet.exe\" detector " //
-							+ "test_detector_named_pipes_service " //
-							+ "ctr.config.data " //
-							+ "ctr.cfg " //
-							+ "ctr.weights " //
-							+ "-thresh 0.01 " //
-							+ "-dont_show -save_labels " //
-							+ "-ext_output 11_1_i_h__20190621093202_27871908.jpg");
-			builder.redirectErrorStream(true);
-			Process p = builder.start();
-			BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()));
-			String line;
-			while (true) {
-				line = r.readLine();
-				if (line == null) {
-					Log.info("Read Null");
-					continue;
+		while (true) {
+			try {
+				// TODO Auto-generated method stub
+				ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", //
+						"cd darknet_resources && " //
+								+ "\"../darknet_release/darknet.exe\" detector " //
+								+ "test_detector_named_pipes_service " //
+								+ name + ".config.data " //
+								+ name + ".cfg " //
+								+ name + ".weights " //
+								+ "-thresh 0.01 " //
+								+ "-dont_show -save_labels " //
+								+ "-ext_output 11_1_i_h__20190621093202_27871908.jpg " //
+								+ "-pipe_name " + name + " ");
+				builder.redirectErrorStream(true);
+				process = builder.start();
+				BufferedReader r = new BufferedReader(new InputStreamReader(process.getInputStream()));
+				String line;
+				while (true) {
+					line = r.readLine();
+					if (line == null) {
+						Log.info("Read Null");
+						break;
+					}
+					Log.info("DarknetCMD:{}", line);
 				}
-				System.out.println(line);
+				while (process.isAlive()) {
+					process.destroy();
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
 	}
 

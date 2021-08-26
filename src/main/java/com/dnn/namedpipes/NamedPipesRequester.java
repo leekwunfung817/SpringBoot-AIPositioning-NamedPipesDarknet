@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import javax.annotation.PostConstruct;
 
 import org.apache.commons.io.FileUtils;
+import org.mortbay.log.Log;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -19,7 +20,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class NamedPipesRequester {
+public class NamedPipesRequester extends Thread {
 
 	protected RandomAccessFile pipeTo = null;
 	protected final String name;
@@ -33,37 +34,31 @@ public class NamedPipesRequester {
 	public NamedPipesRequester(String name) {
 		log.info("Create Name pipes requester {}", name);
 		this.name = name;
+		start();
+	}
+
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+		reconnect();
 		while (true) {
-			reconnect();
 			try {
 				while (true) {
 					if (inputMessageQueue.size() > 0) {
 						for (byte[] msg : inputMessageQueue) {
-							sendDestination(msg);
+							predict(msg);
 						}
 					} else {
-						Thread.sleep(100);
+						Thread.sleep(30);
 					}
 				}
-			} catch (IOException | InterruptedException e) {
+			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+//				e.printStackTrace();
+				log.warn("Exception:", e);
+				reconnect();
 			}
 		}
-//		try {
-//			// Connect to the pipe
-//			pipe = new RandomAccessFile("\\\\.\\pipe\\darknet_anotation", "rw");
-////			String echoText = "Hello word\n";
-//			// write to pipe
-////			pipe.write(echoText.getBytes());
-//			// read response
-////			String echoResponse = pipe.readLine();
-////			System.out.println("Response: " + echoResponse);
-////			pipe.close();
-//		} catch (Exception e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
 	}
 
 	public void reconnect() {
@@ -73,8 +68,8 @@ public class NamedPipesRequester {
 					pipeTo.close();
 				log.info("Reconnect {}", name);
 				pipeTo = new RandomAccessFile("\\\\.\\pipe\\" + name, "rw");
-				log.info("Named pipes connect success. {}", name);
-				keepAlive();
+				Log.info("Success connect NamedPipesRequester.{}", name);
+				predict();
 				break;
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -89,25 +84,38 @@ public class NamedPipesRequester {
 		}
 	}
 
-	public void sendDestination(byte[] bytes) throws IOException {
-		pipeTo.write(bytes);
-	}
+//	public void sendDestination(byte[] bytes) throws IOException {
+//		pipeTo.write(bytes);
+//	}
 
 //	@Scheduled(fixedDelay = 1000, initialDelay = 1000)
-	public void keepAlive() throws IOException {
+	public DarknetResult predict() {
+		byte[] bytes = Util.getSampleImgBytes();
+		return predict(bytes);
+	}
+
+	public DarknetResult predict(byte[] bytes) {
+		return predict(bytes, false);
+	}
+
+	public DarknetResult predict(byte[] bytes, boolean show) {
 		try {
 			log.info("keepAlive sendBytes {}", name);
-			byte[] bytes = Util.getSampleImgBytes();
 			pipeTo.write(bytes);
 			String echoResponse = pipeTo.readLine();
 			log.info("keepAlive Response {}", echoResponse);
 //			System.out.println("Response: " + echoResponse);
 			DarknetResult result = new DarknetResult(bytes, echoResponse);
-			result.showResultImage();
+			if (show)
+				result.showResultImage();
+			return result;
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+//			e.printStackTrace();
+			log.warn("Predict fail.");
 			reconnect();
+			return null;
 		}
 	}
+
 }
