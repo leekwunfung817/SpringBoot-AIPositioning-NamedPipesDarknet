@@ -3,6 +3,8 @@ package com.dnn.namedpipes;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 
 import javax.annotation.PostConstruct;
@@ -14,6 +16,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.dnn.bean.DarknetResult;
+import com.dnn.bean.DarknetResultSet;
 import com.dnn.util.Util;
 
 import lombok.Getter;
@@ -24,6 +27,7 @@ public class NamedPipesRequester extends Thread {
 
 	protected RandomAccessFile pipeTo = null;
 	protected final String name;
+	protected final String[] classes;
 
 //	darknet_anotation
 //	@PostConstruct
@@ -31,9 +35,11 @@ public class NamedPipesRequester extends Thread {
 	@Getter
 	ArrayList<byte[]> inputMessageQueue = new ArrayList<byte[]>();
 
-	public NamedPipesRequester(String name) {
+	public NamedPipesRequester(String name) throws IOException {
 		log.info("Create Name pipes requester {}", name);
 		this.name = name;
+		Path classesFile = new File("./darknet_resources/" + name + ".predefined_classes.txt").toPath();
+		classes = Files.readString(classesFile).split("\n");
 		start();
 	}
 
@@ -89,26 +95,26 @@ public class NamedPipesRequester extends Thread {
 //	}
 
 //	@Scheduled(fixedDelay = 1000, initialDelay = 1000)
-	public DarknetResult predict() {
+	public DarknetResultSet predict() {
 		byte[] bytes = Util.getSampleImgBytes();
 		return predict(bytes);
 	}
 
-	public DarknetResult predict(byte[] bytes) {
+	public DarknetResultSet predict(byte[] bytes) {
 		return predict(bytes, false);
 	}
 
-	public DarknetResult predict(byte[] bytes, boolean show) {
+	public DarknetResultSet predict(byte[] bytes, boolean show) {
 		try {
 			log.info("keepAlive sendBytes {}", name);
 			pipeTo.write(bytes);
 			String echoResponse = pipeTo.readLine();
 			log.info("keepAlive Response {}", echoResponse);
 //			System.out.println("Response: " + echoResponse);
-			DarknetResult result = new DarknetResult(bytes, echoResponse);
+			DarknetResultSet results = new DarknetResultSet(bytes, echoResponse, classes);
 			if (show)
-				result.showResultImage();
-			return result;
+				results.showResultImage();
+			return results;
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 //			e.printStackTrace();

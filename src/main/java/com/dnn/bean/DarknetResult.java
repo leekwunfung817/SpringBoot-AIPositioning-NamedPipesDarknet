@@ -8,40 +8,60 @@ import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 import java.awt.image.WritableRaster;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 
+import lombok.Data;
+
+@Data
 public class DarknetResult {
 	private final int id;
-	private final double x, y, width, height;
+	private final String name;
+	private final double centerX, centerY, width, height, ltX, ltY;
 	private final BufferedImage originImage;
 
-	public DarknetResult(byte[] imgBytes, String annotation) throws IOException {
+	public DarknetResult(byte[] imgBytes, String annotation, String[] names) throws IOException {
+		this(imgBytes, annotation.split(" "), names);
+	}
+
+	public DarknetResult(byte[] imgBytes, String[] arr, String[] names) throws IOException {
 		ByteArrayInputStream bais = new ByteArrayInputStream(imgBytes);
-		String[] arr = annotation.split(" ");
 		originImage = ImageIO.read(bais);
 		double totalW = originImage.getWidth();
 		double totalH = originImage.getHeight();
 		id = Integer.parseInt(arr[0]);
-		x = Double.parseDouble(arr[1]) * totalW;
-		y = Double.parseDouble(arr[2]) * totalH;
+		centerX = Double.parseDouble(arr[1]) * totalW;
+		centerY = Double.parseDouble(arr[2]) * totalH;
 		width = Double.parseDouble(arr[3]) * totalW;
 		height = Double.parseDouble(arr[4]) * totalH;
+
+		ltX = centerX - (width / 2);
+		ltY = centerY - (height / 2);
+
+		this.name = names[id];
 	}
 
-	public DarknetResult(BufferedImage originImage, int id, double x, double y, double width, double height) {
-		super();
-		this.originImage = originImage;
-		this.id = id;
-		this.x = x;
-		this.y = y;
-		this.width = width;
-		this.height = height;
-	}
+//	public DarknetResult(BufferedImage originImage, int id, double x, double y, double width, double height,
+//			String name) {
+//		super();
+//		this.originImage = originImage;
+//		this.id = id;
+//		this.centerX = x;
+//		this.centerY = y;
+//		this.width = width;
+//		this.height = height;
+//
+//		ltX = centerX - (width / 2);
+//		ltY = centerY - (height / 2);
+//
+//		this.name = name;
+//	}
 
 	private static BufferedImage deepCopy(BufferedImage bi) {
 		ColorModel cm = bi.getColorModel();
@@ -52,13 +72,13 @@ public class DarknetResult {
 
 	public BufferedImage getDemo() {
 		BufferedImage copy = deepCopy(originImage);
+		return getDemo(copy);
+	}
+
+	public BufferedImage getDemo(BufferedImage copy) {
 		Graphics2D graph = copy.createGraphics();
 		graph.setColor(Color.RED);
-		int w = (int) width;
-		int h = (int) height;
-		double ltX = x - (width / 2);
-		double ltY = y - (height / 2);
-		graph.draw(new Rectangle((int) ltX, (int) ltY, w, h));
+		graph.draw(new Rectangle((int) ltX, (int) ltY, (int) width, (int) height));
 		graph.dispose();
 		return copy;
 	}
@@ -72,9 +92,9 @@ public class DarknetResult {
 		showImage(img);
 	}
 
-	JFrame frame = null;
+	static JFrame frame = null;
 
-	public void showImage(BufferedImage img) {
+	public static void showImage(BufferedImage img) {
 		if (frame != null) {
 			frame.setVisible(false);
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // if you want the X
@@ -86,4 +106,14 @@ public class DarknetResult {
 		frame.setVisible(true);
 	}
 
+	public BufferedImage getCut() {
+		return originImage.getSubimage((int) ltX, (int) ltY, (int) width, (int) height);
+	}
+
+	public static byte[] convert(BufferedImage bi) throws IOException {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ImageIO.write(bi, "jpg", baos);
+		byte[] bytes = baos.toByteArray();
+		return bytes;
+	}
 }
