@@ -1,5 +1,6 @@
 package com.dnn.namedpipes.controller;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,7 +31,7 @@ public class IPCameraReceiver {
 	public void addCamera(String ipaddress, CallBack callback) {
 		listCloudIPCameraRequester.put(ipaddress, new NamedPipesReceiver(ipaddress) {
 			@Override
-			public void OnMessage(byte[] bytes) {
+			public void OnMessage(byte[] bytes) throws IOException {
 				// TODO Auto-generated method stub
 //				darknet.predict("ctr", bytes);
 				callback.OnReturn(bytes);
@@ -40,7 +41,11 @@ public class IPCameraReceiver {
 	}
 
 	public static class CallBack {
-		public void OnReturn(byte[] bytes) {
+		public void OnReturn(byte[] bytes) throws IOException {
+
+		}
+
+		public void OnReturn(String unit, byte[] bytes) throws IOException {
 
 		}
 	}

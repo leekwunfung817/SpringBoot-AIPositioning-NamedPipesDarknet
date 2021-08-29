@@ -1,5 +1,6 @@
 package com.dnn.namedpipes.controller;
 
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -32,19 +33,28 @@ public class AIController extends Thread {
 		darknet.addDarkNet(OCR);
 		ipcam.addCamera("192.168.169.117", new CallBack() {
 			@Override
-			public void OnReturn(byte[] bytes) {
+			public void OnReturn(String unit, byte[] bytes) throws IOException {
 				// TODO Auto-generated method stub
 				DarknetResultSet carTypeSet = darknet.predict(CTR, bytes);
-				DarknetResultSet licentPlantSet = darknet.predict(LPR, bytes);
-				for (DarknetResult licentPlant : licentPlantSet.getResultset()) {
-					try {
-						byte[] cutBytes = DarknetResult.convert(licentPlant.getCut());
-						DarknetResultSet characterSet = darknet.predict(OCR, cutBytes);
-						String licensePlantString = DarknetOCRString.toOcrString(characterSet);
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+
+				for (DarknetResult car : carTypeSet.getResultset()) {
+					BufferedImage carImg = car.getCut();
+					byte[] carImgBytes = DarknetResult.convert(carImg);
+					DarknetResultSet licentPlantSet = darknet.predict(LPR, carImgBytes);
+					ArrayList<String> licensePlantList = new ArrayList<String>();
+					for (DarknetResult licentPlant : licentPlantSet.getResultset()) {
+						try {
+							byte[] cutBytes = DarknetResult.convert(licentPlant.getCut());
+							DarknetResultSet characterSet = darknet.predict(OCR, cutBytes);
+							String licensePlantString = DarknetOCRString.toOcrString(characterSet);
+							licensePlantList.add(licensePlantString);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 					}
+
+					OnCar(unit, carImg, car.getName(), licensePlantList);
 				}
 			}
 		});
@@ -52,6 +62,10 @@ public class AIController extends Thread {
 
 	@Override
 	public void run() {
+
+	}
+
+	public void OnCar(String camera, BufferedImage carImg, String carName, ArrayList<String> licensePlantList) {
 
 	}
 

@@ -65,7 +65,7 @@ public class NamedPipesReceiver extends Thread {
 		return document;
 	}
 
-	public void OnMessage(byte[] bytes) {
+	public void OnMessage(byte[] bytes) throws IOException {
 
 	}
 
