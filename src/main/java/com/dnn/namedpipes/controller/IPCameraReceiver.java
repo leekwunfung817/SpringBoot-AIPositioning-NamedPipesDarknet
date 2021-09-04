@@ -14,6 +14,7 @@ import com.dnn.cmd.CloudIPCameraCMD;
 import com.dnn.cmd.DarknetCMD;
 import com.dnn.namedpipes.NamedPipesReceiver;
 import com.dnn.namedpipes.NamedPipesRequester;
+import com.dnn.util.Util;
 import com.sun.jna.Callback;
 
 import lombok.extern.slf4j.Slf4j;
@@ -41,11 +42,11 @@ public class IPCameraReceiver {
 	}
 
 	public static class CallBack {
-		public void OnReturn(byte[] bytes) throws IOException {
+		public void OnReturn(byte[] bytes) {
 
 		}
 
-		public void OnReturn(String unit, byte[] bytes) throws IOException {
+		public void OnReturn(String unit, byte[] bytes) {
 
 		}
 	}
