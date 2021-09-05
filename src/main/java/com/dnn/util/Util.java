@@ -16,6 +16,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Component
 public class Util {
 
 	static File imgFile = new File("a.jpg");
