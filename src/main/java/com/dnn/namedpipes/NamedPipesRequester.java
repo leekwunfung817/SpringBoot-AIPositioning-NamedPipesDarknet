@@ -1,6 +1,7 @@
 package com.dnn.namedpipes;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.file.Files;
@@ -38,8 +39,9 @@ public class NamedPipesRequester extends Thread {
 	public NamedPipesRequester(String name) throws IOException {
 		log.info("Create Name pipes requester {}", name);
 		this.name = name;
-		Path classesFile = new File("./darknet_resources/" + name + ".predefined_classes.txt").toPath();
-		classes = Files.readString(classesFile).split("\n");
+		File classesFile = new File("./darknet_resources/" + name + ".predefined_classes.txt");
+		FileInputStream fileInputStream = new FileInputStream(classesFile);
+		classes = new String(fileInputStream.readAllBytes()).split("\n");
 		start();
 	}
 

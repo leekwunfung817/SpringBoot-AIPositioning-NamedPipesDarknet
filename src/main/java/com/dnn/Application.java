@@ -21,6 +21,7 @@ public class Application implements CommandLineRunner {
 	ANNRamdiskClient adapter;
 
 	public static void main(String[] args) {
+		log.info("Version:{}", System.getProperty("java.version"));
 		SpringApplicationBuilder builder = new SpringApplicationBuilder(Application.class);
 		builder.headless(false);
 		ConfigurableApplicationContext context = builder.run(args);
